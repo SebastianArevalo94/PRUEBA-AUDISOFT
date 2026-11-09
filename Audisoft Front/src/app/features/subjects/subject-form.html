@@ -1,0 +1,92 @@
+<app-drawer
+  [title]="isEdit() ? 'Editar asignatura' : 'Nueva asignatura'"
+  [subtitle]="isEdit() ? 'Actualiza los datos y el docente responsable.' : 'Agrega una asignatura al catálogo y asígnale un docente.'"
+  (closed)="cancelled.emit()"
+>
+  <form class="flex min-h-0 flex-1 flex-col" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <div class="flex flex-1 flex-col gap-5 overflow-y-auto px-6 py-6">
+      @if (formError(); as message) {
+        <div class="flex items-start gap-3 rounded-lg border border-danger-border bg-danger-soft px-4 py-3 text-body-sm text-danger" role="alert">
+          <span class="icon text-[20px]">error</span>
+          <span>{{ message }}</span>
+        </div>
+      }
+
+      <div>
+        <label class="field-label" for="name">Nombre <span class="text-danger">*</span></label>
+        <input id="name" class="input" formControlName="name" maxlength="150" placeholder="Bases de Datos I" [class.input-invalid]="errorOf('name')" [attr.aria-invalid]="!!errorOf('name')" aria-describedby="name-error" />
+        @if (errorOf('name'); as msg) { <p id="name-error" class="field-error"><span class="icon text-[16px]">error</span>{{ msg }}</p> }
+      </div>
+
+      <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+        <div>
+          <label class="field-label" for="code">Código <span class="text-danger">*</span></label>
+          <input id="code" class="input font-mono" formControlName="code" maxlength="20" placeholder="BD-101" (input)="toUpper(form.controls.code)" [class.input-invalid]="errorOf('code')" [attr.aria-invalid]="!!errorOf('code')" aria-describedby="code-error" />
+          @if (errorOf('code'); as msg) { <p id="code-error" class="field-error"><span class="icon text-[16px]">error</span>{{ msg }}</p> }
+        </div>
+        <div>
+          <label class="field-label" for="credits">Créditos <span class="text-danger">*</span></label>
+          <input id="credits" type="number" inputmode="numeric" min="1" max="30" step="1" class="input tabular" formControlName="credits" [class.input-invalid]="errorOf('credits')" [attr.aria-invalid]="!!errorOf('credits')" aria-describedby="credits-error credits-hint" />
+          @if (errorOf('credits'); as msg) {
+            <p id="credits-error" class="field-error"><span class="icon text-[16px]">error</span>{{ msg }}</p>
+          } @else {
+            <p id="credits-hint" class="mt-1.5 text-body-sm text-on-surface-variant">Entre 1 y 30. Ponderan el promedio del estudiante.</p>
+          }
+        </div>
+      </div>
+
+      <div>
+        <label class="field-label" for="teacherId">Profesor responsable <span class="text-danger">*</span></label>
+        <div class="relative">
+          <select id="teacherId" class="input cursor-pointer appearance-none pr-8" formControlName="teacherId" [class.input-invalid]="errorOf('teacherId')" [attr.aria-invalid]="!!errorOf('teacherId')" aria-describedby="teacher-error">
+            <option [ngValue]="0" disabled>{{ teachers() ? 'Selecciona un docente…' : 'Cargando docentes…' }}</option>
+            @if (inactiveTeacher(); as p) {
+              <option [ngValue]="p.id" disabled>{{ p.firstName }} {{ p.lastName }} (inactivo)</option>
+            }
+            @for (p of active(); track p.id) {
+              <option [ngValue]="p.id">{{ p.firstName }} {{ p.lastName }}</option>
+            }
+          </select>
+          <span class="icon pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-on-surface-variant">expand_more</span>
+        </div>
+        @if (errorOf('teacherId'); as msg) {
+          <p id="teacher-error" class="field-error"><span class="icon text-[16px]">error</span>{{ msg }}</p>
+        } @else if (inactiveTeacher() && form.controls.teacherId.value === inactiveTeacher()!.id) {
+          <p class="mt-1.5 flex items-start gap-1 text-body-sm text-warning">
+            <span class="icon text-[16px]">warning</span>
+            El docente actual está inactivo. Selecciona un docente activo para guardar.
+          </p>
+        } @else if (teachers() && active().length === 0) {
+          <p class="mt-1.5 flex items-start gap-1 text-body-sm text-warning">
+            <span class="icon text-[16px]">warning</span>
+            No hay profesores activos. Registra o activa uno en Profesores.
+          </p>
+        }
+      </div>
+
+      @if (selectedTeacher(); as p) {
+        <div class="flex items-center gap-3 rounded-lg bg-surface-container-low px-4 py-3">
+          <span class="icon text-primary">badge</span>
+          <span class="flex min-w-0 flex-col">
+            <span class="truncate text-label-md text-on-surface">{{ p.firstName }} {{ p.lastName }}</span>
+            <span class="truncate text-body-sm text-on-surface-variant">
+              {{ p.email }} ·
+              {{ p.subjectCount }} {{ p.subjectCount === 1 ? 'asignatura' : 'asignaturas' }} a cargo
+            </span>
+          </span>
+        </div>
+      }
+    </div>
+
+    <footer class="flex justify-end gap-3 border-t border-outline-variant/40 px-6 py-4">
+      <button type="button" class="btn btn-secondary" (click)="cancelled.emit()">Cancelar</button>
+      <button type="submit" class="btn btn-primary min-w-28" [disabled]="saving()">
+        @if (saving()) {
+          <span class="icon animate-spin text-[18px]">progress_activity</span> Guardando…
+        } @else {
+          <span class="icon text-[18px]">save</span> Guardar
+        }
+      </button>
+    </footer>
+  </form>
+</app-drawer>

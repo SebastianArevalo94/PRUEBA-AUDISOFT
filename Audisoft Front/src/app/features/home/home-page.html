@@ -1,0 +1,317 @@
+<!-- Encabezado de la página -->
+<header class="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+  <div class="flex flex-col gap-1">
+    <div class="flex items-center gap-2">
+      <span class="text-caption font-bold tracking-wider text-primary uppercase">Panel general</span>
+      <span class="h-1 w-1 rounded-full bg-outline-variant"></span>
+      <span class="text-caption text-on-surface-variant">Periodo {{ year }}</span>
+    </div>
+    <h1 class="text-headline-xl-mobile text-on-surface sm:text-headline-xl">{{ greeting() }}</h1>
+    <p class="text-body-md text-on-surface-variant">Resumen de la gestión académica y acceso directo a cada módulo.</p>
+  </div>
+  <div class="flex shrink-0 items-center gap-3">
+    <span class="text-caption text-on-surface-variant">{{ updatedLabel() }}</span>
+    <button type="button" class="btn btn-secondary" [disabled]="loading()" (click)="refresh()">
+      <span class="icon text-[18px]" [class.animate-spin]="loading()">sync</span>
+      Actualizar
+    </button>
+  </div>
+</header>
+
+@if (allFailed()) {
+  <section class="card mb-6 flex flex-col items-center gap-3 px-6 py-16 text-center">
+    <div class="flex h-14 w-14 items-center justify-center rounded-full bg-error-container text-error">
+      <span class="icon text-[28px]">cloud_off</span>
+    </div>
+    <h2 class="text-headline-sm text-on-surface">No se pudo cargar el resumen</h2>
+    <p class="max-w-md text-body-md text-on-surface-variant">No hay conexión con la API. Verifica que el servicio esté en ejecución e inténtalo de nuevo.</p>
+    <button type="button" class="btn btn-secondary mt-2" (click)="refresh()">
+      <span class="icon text-[18px]">refresh</span>
+      Reintentar
+    </button>
+  </section>
+} @else {
+  <!-- Módulos -->
+  <section class="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-2" aria-label="Módulos">
+    <!-- Estudiantes -->
+    <article class="card flex flex-col p-5">
+      <div class="mb-5 flex items-start gap-4">
+        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary-fixed text-primary">
+          <span class="icon icon-filled text-[26px]">school</span>
+        </div>
+        <div class="flex min-w-0 flex-col">
+          <h2 class="text-headline-md text-on-surface">Estudiantes</h2>
+          <p class="text-body-sm text-on-surface-variant">Matrícula, datos de contacto y promedio ponderado.</p>
+        </div>
+      </div>
+      @let e = students();
+      @if (e === undefined) {
+        <span class="skeleton mb-4 h-24"></span>
+      } @else if (e === null) {
+        <p class="mb-4 flex items-center gap-2 rounded-lg bg-error-container/50 px-3 py-3 text-body-sm text-on-error-container"><span class="icon text-[18px]">error</span>No se pudo cargar el resumen de estudiantes.</p>
+      } @else {
+        <dl class="mb-4 grid grid-cols-3 gap-3">
+          <div class="flex flex-col rounded-lg bg-surface-container-low px-3 py-2.5">
+            <dt class="text-caption text-on-surface-variant">Matriculados</dt>
+            <dd class="text-headline-md text-on-surface tabular">{{ e.total }}</dd>
+          </div>
+          <div class="flex flex-col rounded-lg bg-surface-container-low px-3 py-2.5">
+            <dt class="text-caption text-on-surface-variant">Activos</dt>
+            <dd class="text-headline-md text-secondary tabular">{{ e.active }}</dd>
+          </div>
+          <div class="flex flex-col rounded-lg bg-surface-container-low px-3 py-2.5">
+            <dt class="text-caption text-on-surface-variant">Inactivos</dt>
+            <dd class="text-headline-md text-on-surface tabular">{{ e.inactive }}</dd>
+          </div>
+        </dl>
+        <div class="mb-4 flex flex-col gap-1.5">
+          <div class="flex items-center justify-between text-caption text-on-surface-variant">
+            <span>Tasa de actividad</span>
+            <span class="font-semibold text-on-surface tabular">{{ activityRate() ?? '—' }}{{ activityRate() !== null ? '%' : '' }}</span>
+          </div>
+          <div class="h-2 overflow-hidden rounded-full bg-surface-container" role="progressbar" aria-label="Tasa de actividad" [attr.aria-valuenow]="activityRate() ?? 0" aria-valuemin="0" aria-valuemax="100">
+            <div class="h-full rounded-full bg-primary transition-all" [style.width.%]="activityRate() ?? 0"></div>
+          </div>
+        </div>
+      }
+      <div class="mt-auto flex items-center justify-end border-t border-outline-variant/30 pt-4">
+        <a routerLink="/students" class="btn btn-primary">
+          Ir a Estudiantes
+          <span class="icon text-[18px]">arrow_forward</span>
+        </a>
+      </div>
+    </article>
+
+    <!-- Profesores -->
+    <article class="card flex flex-col p-5">
+      <div class="mb-5 flex items-start gap-4">
+        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-secondary-fixed/50 text-secondary">
+          <span class="icon icon-filled text-[26px]">badge</span>
+        </div>
+        <div class="flex min-w-0 flex-col">
+          <h2 class="text-headline-md text-on-surface">Profesores</h2>
+          <p class="text-body-sm text-on-surface-variant">Cuerpo docente y asignaturas a cargo.</p>
+        </div>
+      </div>
+      @let p = teachers();
+      @if (p === undefined) {
+        <span class="skeleton mb-4 h-24"></span>
+      } @else if (p === null) {
+        <p class="mb-4 flex items-center gap-2 rounded-lg bg-error-container/50 px-3 py-3 text-body-sm text-on-error-container"><span class="icon text-[18px]">error</span>No se pudo cargar el resumen de profesores.</p>
+      } @else {
+        <dl class="mb-4 grid grid-cols-3 gap-3">
+          <div class="flex flex-col rounded-lg bg-surface-container-low px-3 py-2.5">
+            <dt class="text-caption text-on-surface-variant">Docentes</dt>
+            <dd class="text-headline-md text-on-surface tabular">{{ p.total }}</dd>
+          </div>
+          <div class="flex flex-col rounded-lg bg-surface-container-low px-3 py-2.5">
+            <dt class="text-caption text-on-surface-variant">Activos</dt>
+            <dd class="text-headline-md text-secondary tabular">{{ p.active }}</dd>
+          </div>
+          <div class="flex flex-col rounded-lg bg-surface-container-low px-3 py-2.5">
+            <dt class="truncate text-caption text-on-surface-variant" title="Asignaturas por docente activo">Asig. / docente</dt>
+            <dd class="text-headline-md text-on-surface tabular">{{ subjectsPerTeacher() ?? '—' }}</dd>
+          </div>
+        </dl>
+        <div class="mb-4 flex flex-col gap-1.5">
+          <div class="flex items-center justify-between text-caption text-on-surface-variant">
+            <span>Docentes activos</span>
+            <span class="font-semibold text-on-surface tabular">{{ activeTeacherRate() ?? '—' }}{{ activeTeacherRate() !== null ? '%' : '' }}</span>
+          </div>
+          <div class="h-2 overflow-hidden rounded-full bg-surface-container" role="progressbar" aria-label="Docentes activos" [attr.aria-valuenow]="activeTeacherRate() ?? 0" aria-valuemin="0" aria-valuemax="100">
+            <div class="h-full rounded-full bg-secondary transition-all" [style.width.%]="activeTeacherRate() ?? 0"></div>
+          </div>
+        </div>
+      }
+      <div class="mt-auto flex items-center justify-end border-t border-outline-variant/30 pt-4">
+        <a routerLink="/teachers" class="btn btn-primary">
+          Ir a Profesores
+          <span class="icon text-[18px]">arrow_forward</span>
+        </a>
+      </div>
+    </article>
+
+    <!-- Asignaturas -->
+    <article class="card flex flex-col p-5">
+      <div class="mb-5 flex items-start gap-4">
+        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-tertiary-fixed text-tertiary">
+          <span class="icon icon-filled text-[26px]">menu_book</span>
+        </div>
+        <div class="flex min-w-0 flex-col">
+          <h2 class="text-headline-md text-on-surface">Asignaturas</h2>
+          <p class="text-body-sm text-on-surface-variant">Catálogo académico, créditos y docente titular.</p>
+        </div>
+      </div>
+      @let a = subjects();
+      @if (a === undefined) {
+        <span class="skeleton mb-4 h-24"></span>
+      } @else if (a === null) {
+        <p class="mb-4 flex items-center gap-2 rounded-lg bg-error-container/50 px-3 py-3 text-body-sm text-on-error-container"><span class="icon text-[18px]">error</span>No se pudo cargar el resumen de asignaturas.</p>
+      } @else {
+        <dl class="mb-4 grid grid-cols-3 gap-3">
+          <div class="flex flex-col rounded-lg bg-surface-container-low px-3 py-2.5">
+            <dt class="text-caption text-on-surface-variant">Asignaturas</dt>
+            <dd class="text-headline-md text-on-surface tabular">{{ a.total }}</dd>
+          </div>
+          <div class="flex flex-col rounded-lg bg-surface-container-low px-3 py-2.5">
+            <dt class="text-caption text-on-surface-variant">Créditos</dt>
+            <dd class="text-headline-md text-on-surface tabular">{{ a.totalCredits }}</dd>
+          </div>
+          <div class="flex flex-col rounded-lg bg-surface-container-low px-3 py-2.5">
+            <dt class="truncate text-caption text-on-surface-variant" title="Asignaturas con docente inactivo">Sin docente activo</dt>
+            <dd class="text-headline-md tabular" [class]="a.withInactiveTeacher ? 'text-danger' : 'text-on-surface'">{{ a.withInactiveTeacher }}</dd>
+          </div>
+        </dl>
+        <div class="mb-4 flex flex-col gap-1.5">
+          <div class="flex items-center justify-between text-caption text-on-surface-variant">
+            <span>Docentes activos con carga</span>
+            <span class="font-semibold text-on-surface tabular">{{ a.teachersWithLoad }} de {{ a.activeTeachers }}{{ averageCredits() !== null ? ' · ' + averageCredits() + ' créditos prom.' : '' }}</span>
+          </div>
+          <div class="h-2 overflow-hidden rounded-full bg-surface-container" role="progressbar" aria-label="Docentes activos con carga" [attr.aria-valuenow]="teacherCoverage() ?? 0" aria-valuemin="0" aria-valuemax="100">
+            <div class="h-full rounded-full bg-tertiary transition-all" [style.width.%]="teacherCoverage() ?? 0"></div>
+          </div>
+        </div>
+      }
+      <div class="mt-auto flex items-center justify-end border-t border-outline-variant/30 pt-4">
+        <a routerLink="/subjects" class="btn btn-primary">
+          Ir a Asignaturas
+          <span class="icon text-[18px]">arrow_forward</span>
+        </a>
+      </div>
+    </article>
+
+    <!-- Notas -->
+    <article class="card flex flex-col p-5">
+      <div class="mb-5 flex items-start gap-4">
+        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary-fixed-dim/60 text-on-primary-fixed-variant">
+          <span class="icon icon-filled text-[26px]">grade</span>
+        </div>
+        <div class="flex min-w-0 flex-col">
+          <h2 class="text-headline-md text-on-surface">Notas</h2>
+          <p class="text-body-sm text-on-surface-variant">Calificaciones, aprobación y riesgo académico.</p>
+        </div>
+      </div>
+      @let n = grades();
+      @if (n === undefined) {
+        <span class="skeleton mb-4 h-24"></span>
+      } @else if (n === null) {
+        <p class="mb-4 flex items-center gap-2 rounded-lg bg-error-container/50 px-3 py-3 text-body-sm text-on-error-container"><span class="icon text-[18px]">error</span>No se pudo cargar el resumen de notas.</p>
+      } @else {
+        <dl class="mb-4 grid grid-cols-3 gap-3">
+          <div class="flex flex-col rounded-lg bg-surface-container-low px-3 py-2.5">
+            <dt class="text-caption text-on-surface-variant">Registradas</dt>
+            <dd class="text-headline-md text-on-surface tabular">{{ n.total }}</dd>
+          </div>
+          <div class="flex flex-col rounded-lg bg-surface-container-low px-3 py-2.5">
+            <dt class="text-caption text-on-surface-variant">Aprobadas</dt>
+            <dd class="text-headline-md text-success tabular">{{ n.passed }}</dd>
+          </div>
+          <div class="flex flex-col rounded-lg bg-surface-container-low px-3 py-2.5">
+            <dt class="text-caption text-on-surface-variant">Reprobadas</dt>
+            <dd class="text-headline-md tabular" [class]="n.failed ? 'text-danger' : 'text-on-surface'">{{ n.failed }}</dd>
+          </div>
+        </dl>
+        <div class="mb-4 flex flex-col gap-1.5">
+          <div class="flex items-center justify-between text-caption text-on-surface-variant">
+            <span>Tasa de aprobación</span>
+            <span class="font-semibold text-on-surface tabular">{{ n.passRate !== null ? n.passRate + '%' : '—' }}</span>
+          </div>
+          <div class="flex h-2 overflow-hidden rounded-full bg-surface-container" role="progressbar" aria-label="Tasa de aprobación" [attr.aria-valuenow]="n.passRate ?? 0" aria-valuemin="0" aria-valuemax="100">
+            <div class="h-full bg-success transition-all" [style.width.%]="n.passRate ?? 0"></div>
+            @if (n.passRate !== null) {
+              <div class="h-full bg-danger/70 transition-all" [style.width.%]="100 - n.passRate"></div>
+            }
+          </div>
+        </div>
+      }
+      <div class="mt-auto flex items-center justify-end border-t border-outline-variant/30 pt-4">
+        <a routerLink="/grades" class="btn btn-primary">
+          Ir a Notas
+          <span class="icon text-[18px]">arrow_forward</span>
+        </a>
+      </div>
+    </article>
+  </section>
+
+  <!-- Atención requerida y distribución -->
+  <section class="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
+    <div class="card p-5">
+      <div class="mb-4 flex items-center justify-between">
+        <h2 class="text-headline-sm text-on-surface">Atención requerida</h2>
+        @if (data() && alerts().length) {
+          <span class="rounded-full bg-surface-container px-2 py-0.5 text-caption text-on-surface-variant tabular">{{ alerts().length }}</span>
+        }
+      </div>
+      @if (!data()) {
+        <div class="flex flex-col gap-3">
+          @for (_ of [1, 2, 3]; track $index) { <span class="skeleton h-14"></span> }
+        </div>
+      } @else if (alerts().length === 0) {
+        <div class="flex flex-col items-center gap-2 py-8 text-center">
+          <div class="flex h-12 w-12 items-center justify-center rounded-full bg-success-soft text-success">
+            <span class="icon text-[26px]">task_alt</span>
+          </div>
+          <p class="text-label-md text-on-surface">Todo en orden</p>
+          <p class="text-body-sm text-on-surface-variant">No hay situaciones pendientes por revisar.</p>
+        </div>
+      } @else {
+        <ul class="flex flex-col gap-2">
+          @for (al of alerts(); track al.title) {
+            <li
+              class="flex items-center gap-3 rounded-lg border px-3 py-2.5"
+              [class]="al.tone === 'danger' ? 'border-danger-border bg-danger-soft' : al.tone === 'warning' ? 'border-warning-border bg-warning-soft' : 'border-outline-variant/40 bg-surface-container-low'"
+            >
+              <span class="icon shrink-0" [class]="al.tone === 'danger' ? 'text-danger' : al.tone === 'warning' ? 'text-warning' : 'text-primary'">{{ al.icon }}</span>
+              <div class="flex min-w-0 flex-1 flex-col">
+                <span class="text-label-md text-on-surface">{{ al.title }}</span>
+                <span class="text-body-sm text-on-surface-variant">{{ al.detail }}</span>
+              </div>
+              <a [routerLink]="al.link" class="btn h-8 shrink-0 px-3 text-label-sm text-primary hover:bg-primary-fixed/60">
+                {{ al.action }}
+                <span class="icon text-[16px]">chevron_right</span>
+              </a>
+            </li>
+          }
+        </ul>
+      }
+    </div>
+
+    <div class="card p-5">
+      <div class="mb-4 flex items-center justify-between gap-3">
+        <h2 class="text-headline-sm text-on-surface">Distribución de notas</h2>
+        <a routerLink="/grades" class="text-label-sm text-primary hover:underline">Ver detalle</a>
+      </div>
+      @if (grades() === undefined) {
+        <span class="skeleton block h-44"></span>
+      } @else if (distribution(); as d) {
+        <div class="flex h-36 items-end gap-3" role="img" [attr.aria-label]="'Distribución de notas: ' + d.bars.map(b => b.label + ': ' + b.count).join(', ')">
+          @for (b of d.bars; track b.label) {
+            <div class="group flex h-full flex-1 flex-col items-center justify-end gap-1">
+              <span class="text-caption text-on-surface-variant tabular opacity-0 transition-opacity group-hover:opacity-100" [class.opacity-100]="b.count > 0">{{ b.count }}</span>
+              <div
+                class="w-full max-w-14 rounded-t-md transition-all"
+                [class]="b.count ? b.color : 'bg-surface-container'"
+                [style.height.%]="b.height"
+                [title]="b.label + ': ' + b.count + ' ' + (b.count === 1 ? 'nota' : 'notas') + ' (' + b.percentage + '%)'"
+              ></div>
+            </div>
+          }
+        </div>
+        <div class="mt-2 flex gap-3 border-t border-outline-variant/30 pt-2">
+          @for (b of d.bars; track b.label) {
+            <span class="flex-1 text-center font-mono text-caption text-on-surface-variant">{{ b.label }}</span>
+          }
+        </div>
+        <p class="mt-3 text-body-sm text-on-surface-variant">
+          @if (d.top; as top) {
+            La mayoría de las notas está en el rango <strong class="font-semibold text-on-surface">{{ top.label }}</strong> ({{ top.percentage }}%).
+          } @else {
+            Aún no hay notas para graficar.
+          }
+        </p>
+      } @else {
+        <p class="py-12 text-center text-body-sm text-on-surface-variant">No se pudo cargar la distribución de notas.</p>
+      }
+    </div>
+  </section>
+}

@@ -1,0 +1,166 @@
+<app-drawer
+  [title]="isEdit() ? 'Corregir nota' : 'Registrar nota'"
+  [subtitle]="isEdit() ? 'Puedes corregir la evaluación, la nota y su porcentaje.' : 'Califica a un estudiante en una de sus asignaturas.'"
+  (closed)="cancelled.emit()"
+>
+  <form class="flex min-h-0 flex-1 flex-col" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <div class="flex flex-1 flex-col gap-5 overflow-y-auto px-6 py-6">
+      @if (formError(); as message) {
+        <div class="flex items-start gap-3 rounded-lg border border-danger-border bg-danger-soft px-4 py-3 text-body-sm text-danger" role="alert">
+          <span class="icon text-[20px]">error</span>
+          <span>{{ message }}</span>
+        </div>
+      }
+
+      @if (isEdit()) {
+        <!-- Al corregir, estudiante / asignatura / profesor no cambian -->
+        @let n = grade()!;
+        <dl class="grid grid-cols-1 gap-3 rounded-lg bg-surface-container-low px-4 py-3 text-body-sm sm:grid-cols-2">
+          <div class="flex flex-col">
+            <dt class="text-caption text-on-surface-variant">Estudiante</dt>
+            <dd class="text-label-md text-on-surface">{{ n.studentName }} <span class="font-mono text-caption text-on-surface-variant">{{ n.studentCode }}</span></dd>
+          </div>
+          <div class="flex flex-col">
+            <dt class="text-caption text-on-surface-variant">Asignatura</dt>
+            <dd class="text-label-md text-on-surface">{{ n.subjectName }} <span class="font-mono text-caption text-primary">{{ n.subjectCode }}</span></dd>
+          </div>
+          <div class="flex flex-col sm:col-span-2">
+            <dt class="text-caption text-on-surface-variant">Profesor que calificó</dt>
+            <dd class="text-label-md text-on-surface">{{ n.teacherName }}</dd>
+          </div>
+        </dl>
+      } @else {
+        <div>
+          <label class="field-label" for="grade-student">Estudiante <span class="text-danger">*</span></label>
+          <app-student-picker
+            inputId="grade-student"
+            placeholder="Busca por nombre o código…"
+            describedBy="student-error"
+            [activeOnly]="true"
+            [value]="student()"
+            [invalid]="!!errorOf('studentId')"
+            (changed)="setStudent($event)"
+            (touched)="form.controls.studentId.markAsTouched()"
+          />
+          @if (errorOf('studentId'); as msg) {
+            <p id="student-error" class="field-error"><span class="icon text-[16px]">error</span>{{ msg }}</p>
+          } @else {
+            <p class="mt-1.5 text-body-sm text-on-surface-variant">Solo se muestran estudiantes activos.</p>
+          }
+        </div>
+
+        <div>
+          <label class="field-label" for="subjectId">Asignatura <span class="text-danger">*</span></label>
+          <div class="relative">
+            <select id="subjectId" class="input cursor-pointer appearance-none pr-8" formControlName="subjectId" [class.input-invalid]="errorOf('subjectId')" [attr.aria-invalid]="!!errorOf('subjectId')" aria-describedby="subject-error">
+              <option [ngValue]="0" disabled>{{ subjects() ? 'Selecciona una asignatura…' : 'Cargando asignaturas…' }}</option>
+              @for (a of sortedSubjects(); track a.id) {
+                <option [ngValue]="a.id">{{ a.code }} · {{ a.name }}</option>
+              }
+            </select>
+            <span class="icon pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-on-surface-variant">expand_more</span>
+          </div>
+          @if (errorOf('subjectId'); as msg) {
+            <p id="subject-error" class="field-error"><span class="icon text-[16px]">error</span>{{ msg }}</p>
+          } @else if (subject(); as a) {
+            <p class="mt-1.5 flex items-center gap-1 text-body-sm" [class]="inactiveTeacher() ? 'text-warning' : 'text-on-surface-variant'">
+              <span class="icon text-[16px]">{{ inactiveTeacher() ? 'warning' : 'badge' }}</span>
+              @if (inactiveTeacher()) {
+                {{ a.teacherName }} está inactivo: no puede registrar notas. Reasigna la asignatura primero.
+              } @else {
+                Califica {{ a.teacherName }}, docente titular · {{ a.credits }} {{ a.credits === 1 ? 'crédito' : 'créditos' }}
+              }
+            </p>
+          }
+        </div>
+      }
+
+      <div>
+        <label class="field-label" for="name">Evaluación <span class="text-danger">*</span></label>
+        <input id="name" class="input" formControlName="name" maxlength="100" placeholder="Parcial 1, Taller, Laboratorio…" [class.input-invalid]="errorOf('name')" [attr.aria-invalid]="!!errorOf('name')" aria-describedby="name-error" />
+        @if (errorOf('name'); as msg) { <p id="name-error" class="field-error"><span class="icon text-[16px]">error</span>{{ msg }}</p> }
+      </div>
+
+      <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+        <div>
+          <label class="field-label" for="value">Nota (0.0 – 5.0) <span class="text-danger">*</span></label>
+          <div class="relative">
+            <input id="value" type="number" inputmode="decimal" min="0" max="5" step="0.1" class="input pr-16 tabular" formControlName="value" placeholder="4.5" [class.input-invalid]="errorOf('value')" [attr.aria-invalid]="!!errorOf('value')" aria-describedby="value-error" />
+            @if (preview() !== null) {
+              <span class="grade-badge pointer-events-none absolute top-1/2 right-2 -translate-y-1/2" [class]="'grade-' + tone(preview()!)">{{ fmtGrade(preview()!) }}</span>
+            }
+          </div>
+          @if (errorOf('value'); as msg) { <p id="value-error" class="field-error"><span class="icon text-[16px]">error</span>{{ msg }}</p> }
+        </div>
+        <div>
+          <label class="field-label" for="percentage">Porcentaje <span class="text-danger">*</span></label>
+          <div class="relative">
+            <input id="percentage" type="number" inputmode="decimal" min="0.01" max="100" step="any" class="input pr-8 tabular" formControlName="percentage" placeholder="30" [class.input-invalid]="errorOf('percentage')" [attr.aria-invalid]="!!errorOf('percentage')" aria-describedby="percentage-error percentage-hint" />
+            <span class="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-body-md text-on-surface-variant">%</span>
+          </div>
+          @if (errorOf('percentage'); as msg) {
+            <p id="percentage-error" class="field-error"><span class="icon text-[16px]">error</span>{{ msg }}</p>
+          } @else if (available() !== null) {
+            <p id="percentage-hint" class="mt-1.5 flex items-center gap-1 text-body-sm text-on-surface-variant">
+              Disponible: <strong class="font-semibold text-on-surface">{{ percent(available()!) }}</strong>
+              @if (available()! > 0 && Number(form.controls.percentage.value) !== available()) {
+                <button type="button" class="ml-1 text-primary hover:underline" (click)="useAvailable()">Usar</button>
+              }
+            </p>
+          }
+        </div>
+      </div>
+
+      <!-- Evaluaciones ya registradas del estudiante en la asignatura -->
+      @if (loadingAssessments()) {
+        <span class="skeleton h-24"></span>
+      } @else if (assessments(); as ev) {
+        <section class="rounded-lg bg-surface-container-low px-4 py-3" aria-label="Evaluaciones registradas">
+          <div class="mb-2 flex items-center justify-between gap-3">
+            <h3 class="text-label-md text-on-surface">{{ isEdit() ? 'Otras evaluaciones' : 'Evaluaciones registradas' }}</h3>
+            <span class="text-caption text-on-surface-variant tabular">{{ percent(ev.recorded) }} de 100%</span>
+          </div>
+          <div class="mb-3 flex h-2 overflow-hidden rounded-full bg-surface-container-high" role="presentation">
+            <span class="h-full bg-primary" [style.width.%]="ev.recorded"></span>
+            @if (Number(form.controls.percentage.value) > 0) {
+              <span class="h-full bg-primary/40" [style.width.%]="Math.min(Number(form.controls.percentage.value), 100 - ev.recorded)"></span>
+            }
+          </div>
+          @if (ev.grades.length === 0) {
+            <p class="text-body-sm text-on-surface-variant">{{ isEdit() ? 'No tiene otras notas en esta asignatura.' : 'Aún no tiene notas en esta asignatura.' }}</p>
+          } @else {
+            <ul class="flex flex-col gap-1.5">
+              @for (x of ev.grades; track x.id) {
+                <li class="flex items-center justify-between gap-3 text-body-sm">
+                  <span class="truncate text-on-surface">{{ x.name }}</span>
+                  <span class="flex shrink-0 items-center gap-2">
+                    <span class="text-on-surface-variant tabular">{{ percent(x.percentage) }}</span>
+                    <span class="grade-badge" [class]="'grade-' + tone(x.value)">{{ fmtGrade(x.value) }}</span>
+                  </span>
+                </li>
+              }
+            </ul>
+          }
+        </section>
+      }
+
+      @if (contribution() !== null) {
+        <p class="flex items-center gap-2 text-body-sm text-on-surface-variant">
+          <span class="icon text-[18px] text-primary">calculate</span>
+          Aporta <strong class="font-semibold text-on-surface tabular">{{ contribution()!.toFixed(2) }}</strong> puntos a la nota acumulada de la asignatura.
+        </p>
+      }
+    </div>
+
+    <footer class="flex justify-end gap-3 border-t border-outline-variant/40 px-6 py-4">
+      <button type="button" class="btn btn-secondary" (click)="cancelled.emit()">Cancelar</button>
+      <button type="submit" class="btn btn-primary min-w-28" [disabled]="saving()">
+        @if (saving()) {
+          <span class="icon animate-spin text-[18px]">progress_activity</span> Guardando…
+        } @else {
+          <span class="icon text-[18px]">save</span> Guardar
+        }
+      </button>
+    </footer>
+  </form>
+</app-drawer>

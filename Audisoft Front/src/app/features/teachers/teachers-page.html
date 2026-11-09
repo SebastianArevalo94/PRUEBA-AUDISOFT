@@ -1,0 +1,385 @@
+<!-- Encabezado de la página -->
+<header class="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+  <div class="flex flex-col gap-1">
+    <div class="flex flex-wrap items-center gap-3">
+      <h1 class="text-headline-xl-mobile text-on-surface sm:text-headline-xl">Profesores</h1>
+      @if (stats(); as s) {
+        <span class="rounded-md bg-primary-fixed px-2 py-0.5 text-label-sm text-primary tabular">{{ s.active }} {{ s.active === 1 ? 'activo' : 'activos' }}</span>
+      }
+    </div>
+    <p class="text-body-md text-on-surface-variant">Administra el cuerpo docente y las asignaturas que tiene a cargo.</p>
+  </div>
+  <div class="flex shrink-0 items-center gap-3">
+    <button type="button" class="btn btn-secondary" [disabled]="exporting() || !result()?.totalCount" (click)="exportCsv()">
+      <span class="icon text-[18px]" [class.animate-spin]="exporting()">{{ exporting() ? 'progress_activity' : 'file_download' }}</span>
+      Exportar
+    </button>
+    <button type="button" class="btn btn-primary" (click)="openCreate()">
+      <span class="icon">person_add</span>
+      Nuevo profesor
+    </button>
+  </div>
+</header>
+
+<!-- Indicadores del cuerpo docente -->
+<section class="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3" aria-label="Indicadores del cuerpo docente">
+  @let s = stats();
+  <div class="card flex items-center gap-4 p-5">
+    <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary-fixed text-primary">
+      <span class="icon text-[26px]">groups</span>
+    </div>
+    <div class="flex min-w-0 flex-col">
+      <span class="text-caption tracking-wider text-on-surface-variant uppercase">Cuerpo docente total</span>
+      @if (s) {
+        <span class="text-headline-md text-on-surface tabular">{{ s.total }} {{ s.total === 1 ? 'profesor' : 'profesores' }}</span>
+        <span class="text-caption text-secondary">{{ s.active }} {{ s.active === 1 ? 'activo' : 'activos' }}</span>
+      } @else {
+        <span class="skeleton mt-1 h-7 w-32"></span>
+      }
+    </div>
+  </div>
+  <div class="card flex items-center gap-4 p-5">
+    <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-secondary-fixed/60 text-secondary">
+      <span class="icon text-[26px]">menu_book</span>
+    </div>
+    <div class="flex min-w-0 flex-col">
+      <span class="text-caption tracking-wider text-on-surface-variant uppercase">Asignaturas cubiertas</span>
+      @if (s) {
+        <span class="text-headline-md text-on-surface tabular">{{ s.subjects }} {{ s.subjects === 1 ? 'asignatura' : 'asignaturas' }}</span>
+        <span class="text-caption text-on-surface-variant">
+          @if (averagePerTeacher(); as avg) { Promedio: {{ avg }} por docente activo } @else { Sin docentes activos }
+        </span>
+      } @else {
+        <span class="skeleton mt-1 h-7 w-32"></span>
+      }
+    </div>
+  </div>
+  <div class="card flex items-center gap-4 p-5">
+    <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-tertiary-fixed text-tertiary">
+      <span class="icon text-[26px]">person_off</span>
+    </div>
+    <div class="flex min-w-0 flex-col">
+      <span class="text-caption tracking-wider text-on-surface-variant uppercase">Profesores inactivos</span>
+      @if (s) {
+        <span class="text-headline-md text-on-surface tabular">{{ s.inactive }}</span>
+        <span class="text-caption text-on-surface-variant">No pueden recibir asignaturas</span>
+      } @else {
+        <span class="skeleton mt-1 h-7 w-20"></span>
+      }
+    </div>
+  </div>
+</section>
+
+<!-- Barra de herramientas -->
+<section class="card mb-6 flex flex-col justify-between gap-4 p-4 md:flex-row md:items-center">
+  <div class="flex flex-1 flex-wrap items-center gap-3">
+    <div class="relative w-full sm:w-[400px]">
+      <span class="icon pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-on-surface-variant">search</span>
+      <input
+        type="search"
+        class="input pl-10"
+        placeholder="Buscar por nombre o correo…"
+        aria-label="Buscar profesores"
+        [value]="searchText()"
+        (input)="onSearch($any($event.target).value)"
+      />
+    </div>
+    <div class="relative w-full sm:w-48">
+      <select class="input cursor-pointer appearance-none pr-8" aria-label="Filtrar por estado" [value]="filters().status" (change)="onStatus($any($event.target).value)">
+        <option value="">Estado: Todos</option>
+        <option value="active">Activos</option>
+        <option value="inactive">Inactivos</option>
+      </select>
+      <span class="icon pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-on-surface-variant">expand_more</span>
+    </div>
+    <div class="relative w-full sm:w-52">
+      <select class="input cursor-pointer appearance-none pr-8" aria-label="Filtrar por asignaturas a cargo" [value]="filters().subjects" (change)="onSubjects($any($event.target).value)">
+        <option value="">Asignaturas: Todas</option>
+        <option value="with">Con asignaturas</option>
+        <option value="without">Sin asignaturas</option>
+      </select>
+      <span class="icon pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-on-surface-variant">expand_more</span>
+    </div>
+    <!-- Fecha de registro: un día puntual o un rango (el campo se expande o contrae) -->
+    <app-date-filter
+      fieldLabel="Registro"
+      verb="Registrados"
+      idPrefix="registration"
+      [from]="filters().from"
+      [to]="filters().to"
+      (rangeChange)="onDate($event)"
+    />
+    <!-- Orden (en móvil no hay encabezados de tabla) -->
+    <div class="relative w-full md:hidden">
+      <span class="icon pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-[20px] text-on-surface-variant">sort</span>
+      <select
+        class="input cursor-pointer appearance-none pr-8 pl-10"
+        aria-label="Ordenar por"
+        [value]="filters().sortBy + ':' + filters().sortDir"
+        (change)="onSortOption($any($event.target).value)"
+      >
+        @for (o of sortOptions; track o.value) {
+          <option [value]="o.value" [selected]="o.value === filters().sortBy + ':' + filters().sortDir">{{ o.label }}</option>
+        }
+      </select>
+      <span class="icon pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-on-surface-variant">expand_more</span>
+    </div>
+    @if (hasFilters()) {
+      <button type="button" class="btn h-10 px-3 font-medium text-primary hover:bg-primary-fixed/60" (click)="clearFilters()">
+        <span class="icon text-[18px]">filter_alt_off</span>
+        Limpiar filtros
+      </button>
+    }
+  </div>
+  <div class="flex items-center gap-2 self-start md:self-auto">
+    <span class="flex items-center gap-2 rounded-lg bg-surface-container-low px-3 py-2 text-caption text-on-surface-variant">
+      <span class="h-2 w-2 rounded-full bg-secondary"></span>
+      @if (stats(); as s) { Total: {{ s.total }} {{ s.total === 1 ? 'profesor registrado' : 'profesores registrados' }} } @else { Calculando… }
+    </span>
+    <button type="button" class="btn-icon hover:text-on-surface" title="Actualizar" aria-label="Actualizar listado" (click)="refresh()">
+      <span class="icon text-[18px]" [class.animate-spin]="loading()">sync</span>
+    </button>
+  </div>
+</section>
+
+<!-- Tabla de profesores -->
+<section class="card flex flex-col overflow-hidden">
+  @if (error(); as err) {
+    <div class="flex flex-col items-center gap-3 px-6 py-16 text-center">
+      <div class="flex h-14 w-14 items-center justify-center rounded-full bg-error-container text-error">
+        <span class="icon text-[28px]">{{ err.isNetworkError ? 'cloud_off' : 'error' }}</span>
+      </div>
+      <h2 class="text-headline-sm text-on-surface">{{ err.title }}</h2>
+      <p class="max-w-md text-body-md text-on-surface-variant">{{ err.detail }}</p>
+      <button type="button" class="btn btn-secondary mt-2" (click)="refresh()">
+        <span class="icon text-[18px]">refresh</span>
+        Reintentar
+      </button>
+    </div>
+  } @else if (loading() && !result()) {
+    <div class="flex flex-col gap-5 px-6 py-6" aria-busy="true" aria-label="Cargando profesores">
+      @for (_ of skeletonRows; track $index) {
+        <div class="flex items-center gap-6">
+          <span class="skeleton h-5 w-5"></span>
+          <span class="skeleton h-9 w-9 shrink-0 rounded-full"></span>
+          <span class="flex flex-1 flex-col gap-2"><span class="skeleton h-4 w-48"></span><span class="skeleton h-3 w-64 max-w-full"></span></span>
+          <span class="skeleton hidden h-7 w-28 rounded-full md:block"></span>
+        </div>
+      }
+    </div>
+  } @else if (teachers().length === 0) {
+    <div class="flex flex-col items-center gap-3 px-6 py-16 text-center">
+      <div class="flex h-14 w-14 items-center justify-center rounded-full bg-primary-fixed text-primary">
+        <span class="icon text-[28px]">{{ hasFilters() ? 'search_off' : 'badge' }}</span>
+      </div>
+      @if (hasFilters()) {
+        <h2 class="text-headline-sm text-on-surface">No se encontraron profesores</h2>
+        <p class="text-body-md text-on-surface-variant">Ningún profesor coincide con los filtros seleccionados.</p>
+        <button type="button" class="btn btn-secondary mt-2" (click)="clearFilters()">Limpiar filtros</button>
+      } @else {
+        <h2 class="text-headline-sm text-on-surface">Aún no hay profesores registrados</h2>
+        <p class="text-body-md text-on-surface-variant">Registra al primer docente para asignarle asignaturas.</p>
+        <button type="button" class="btn btn-primary mt-2" (click)="openCreate()">
+          <span class="icon">person_add</span>
+          Nuevo profesor
+        </button>
+      }
+    </div>
+  } @else {
+    <div class="transition-opacity" [class.opacity-60]="loading()" [attr.aria-busy]="loading()">
+      <!-- Escritorio / tablet -->
+      <div class="hidden w-full overflow-x-auto md:block">
+        <table class="w-full border-collapse text-left">
+          <thead>
+            <tr class="bg-surface-container-low text-label-sm tracking-wider text-on-surface-variant uppercase">
+              <th scope="col" class="w-14 py-3 pl-4"><span class="sr-only">Expandir</span></th>
+              @let sortedName = filters().sortBy === 'name';
+              <th scope="col" class="px-4 py-3 font-semibold" [attr.aria-sort]="ariaSort('name')">
+                <button
+                  type="button"
+                  class="group/sort -mx-1.5 inline-flex items-center gap-1 rounded px-1.5 py-0.5 tracking-wider uppercase transition-colors hover:bg-surface-container hover:text-on-surface"
+                  [class.text-primary]="sortedName"
+                  title="Ordenar por apellido"
+                  (click)="sortBy('name')"
+                >
+                  Profesor
+                  <span
+                    class="icon text-[16px] transition-opacity"
+                    [class]="sortedName ? 'opacity-100' : 'opacity-0 group-hover/sort:opacity-60'"
+                    aria-hidden="true"
+                  >{{ sortedName ? (filters().sortDir === 'asc' ? 'arrow_upward' : 'arrow_downward') : 'swap_vert' }}</span>
+                </button>
+              </th>
+              <th scope="col" class="px-4 py-3 font-semibold">Asignaturas</th>
+              @let sortedCreatedAt = filters().sortBy === 'createdAt';
+              <th scope="col" class="px-4 py-3 font-semibold" [attr.aria-sort]="ariaSort('createdAt')">
+                <button
+                  type="button"
+                  class="group/sort -mx-1.5 inline-flex items-center gap-1 rounded px-1.5 py-0.5 tracking-wider uppercase transition-colors hover:bg-surface-container hover:text-on-surface"
+                  [class.text-primary]="sortedCreatedAt"
+                  title="Ordenar por fecha de registro"
+                  (click)="sortBy('createdAt')"
+                >
+                  Fecha de registro
+                  <span
+                    class="icon text-[16px] transition-opacity"
+                    [class]="sortedCreatedAt ? 'opacity-100' : 'opacity-0 group-hover/sort:opacity-60'"
+                    aria-hidden="true"
+                  >{{ sortedCreatedAt ? (filters().sortDir === 'asc' ? 'arrow_upward' : 'arrow_downward') : 'swap_vert' }}</span>
+                </button>
+              </th>
+              <th scope="col" class="px-4 py-3 font-semibold">Estado</th>
+              <th scope="col" class="px-6 py-3 text-right font-semibold">Acciones</th>
+            </tr>
+          </thead>
+          <tbody class="text-body-md text-on-surface">
+            @for (p of teachers(); track p.id) {
+              @let open = isExpanded(p.id);
+              <tr
+                [id]="'profesor-' + p.id"
+                class="group cursor-pointer border-t border-outline-variant/20 transition-colors first:border-t-0 hover:bg-surface-container/50"
+                [class.bg-surface-container-low]="open"
+                (click)="toggle(p.id)"
+              >
+                <td class="py-4 pl-4">
+                  <button
+                    type="button"
+                    class="btn-icon hover:text-on-surface"
+                    [attr.aria-expanded]="open"
+                    [attr.aria-controls]="'asignaturas-' + p.id"
+                    [attr.aria-label]="(open ? 'Ocultar' : 'Ver') + ' asignaturas de ' + p.firstName + ' ' + p.lastName"
+                    (click)="$event.stopPropagation(); toggle(p.id)"
+                  >
+                    <span class="icon transition-transform duration-200" [class.rotate-180]="open">expand_more</span>
+                  </button>
+                </td>
+                <td class="px-4 py-4 whitespace-nowrap">
+                  <div class="flex items-center gap-3">
+                    <app-avatar [firstName]="p.firstName" [lastName]="p.lastName" [seed]="p.id" [muted]="!p.isActive" />
+                    <div class="flex min-w-0 flex-col">
+                      <span class="truncate text-label-md font-semibold text-on-surface transition-colors group-hover:text-primary">{{ p.firstName }} {{ p.lastName }}</span>
+                      <span class="truncate text-body-sm text-on-surface-variant">{{ p.email }}</span>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-4 py-4 whitespace-nowrap">
+                  @if (p.subjectCount > 0) {
+                    <span class="badge bg-primary-fixed text-primary tabular">
+                      <span class="icon text-[16px]">menu_book</span>
+                      {{ p.subjectCount }} {{ p.subjectCount === 1 ? 'asignatura' : 'asignaturas' }}
+                    </span>
+                  } @else {
+                    <span class="badge bg-surface-container text-on-surface-variant">Sin asignaturas</span>
+                  }
+                </td>
+                <td class="px-4 py-4 text-body-sm whitespace-nowrap tabular">{{ p.createdAt | shortDate }}</td>
+                <td class="px-4 py-4 whitespace-nowrap">
+                  @if (p.isActive) {
+                    <span class="badge bg-secondary-fixed text-on-secondary-fixed"><span class="h-1.5 w-1.5 rounded-full bg-secondary"></span>Activo</span>
+                  } @else {
+                    <span class="badge bg-surface-container text-on-surface-variant"><span class="h-1.5 w-1.5 rounded-full bg-outline"></span>Inactivo</span>
+                  }
+                </td>
+                <td class="px-6 py-4 text-right whitespace-nowrap" (click)="$event.stopPropagation()">
+                  <div class="inline-flex items-center justify-end gap-1">
+                    <button type="button" class="btn-icon" title="Editar" [attr.aria-label]="'Editar a ' + p.firstName + ' ' + p.lastName" (click)="openEdit(p)">
+                      <span class="icon">edit</span>
+                    </button>
+                    <button
+                      type="button"
+                      class="btn-icon hover:bg-error-container/50 hover:text-error"
+                      title="Eliminar"
+                      [attr.aria-label]="'Eliminar a ' + p.firstName + ' ' + p.lastName"
+                      [disabled]="busyId() === p.id"
+                      (click)="remove(p)"
+                    >
+                      <span class="icon" [class.animate-spin]="busyId() === p.id">{{ busyId() === p.id ? 'progress_activity' : 'delete' }}</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              @if (open) {
+                <tr [id]="'asignaturas-' + p.id" class="bg-surface-container-low">
+                  <td colspan="6" class="px-6 pt-1 pb-6 sm:pl-16">
+                    <app-teacher-subjects-panel [teacher]="p" />
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Móvil -->
+      <ul class="divide-y divide-outline-variant/30 md:hidden">
+        @for (p of teachers(); track p.id) {
+          @let open = isExpanded(p.id);
+          <li [id]="'profesor-m-' + p.id" class="flex flex-col gap-3 px-5 py-4">
+            <div class="flex items-start gap-3">
+              <app-avatar [firstName]="p.firstName" [lastName]="p.lastName" [seed]="p.id" [muted]="!p.isActive" />
+              <div class="flex min-w-0 flex-1 flex-col gap-1">
+                <span class="truncate text-label-md font-semibold text-on-surface">{{ p.firstName }} {{ p.lastName }}</span>
+                <span class="truncate text-body-sm text-on-surface-variant">{{ p.email }}</span>
+                <div class="mt-1 flex flex-wrap items-center gap-2 text-body-sm text-on-surface-variant">
+                  <span class="tabular">{{ p.createdAt | shortDate }}</span>
+                  @if (p.isActive) {
+                    <span class="badge bg-secondary-fixed py-0.5 text-on-secondary-fixed">Activo</span>
+                  } @else {
+                    <span class="badge bg-surface-container py-0.5 text-on-surface-variant">Inactivo</span>
+                  }
+                </div>
+              </div>
+              <div class="flex shrink-0 gap-1">
+                <button type="button" class="btn-icon" [attr.aria-label]="'Editar a ' + p.firstName" (click)="openEdit(p)"><span class="icon">edit</span></button>
+                <button type="button" class="btn-icon hover:text-error" [attr.aria-label]="'Eliminar a ' + p.firstName" [disabled]="busyId() === p.id" (click)="remove(p)"><span class="icon">delete</span></button>
+              </div>
+            </div>
+            <button
+              type="button"
+              class="flex items-center justify-between rounded-lg bg-surface-container-low px-3 py-2 text-label-sm text-primary"
+              [attr.aria-expanded]="open"
+              (click)="toggle(p.id)"
+            >
+              <span class="flex items-center gap-1.5">
+                <span class="icon text-[16px]">menu_book</span>
+                {{ p.subjectCount }} {{ p.subjectCount === 1 ? 'asignatura' : 'asignaturas' }} a cargo
+              </span>
+              <span class="icon transition-transform" [class.rotate-180]="open">expand_more</span>
+            </button>
+            @if (open) {
+              <app-teacher-subjects-panel [teacher]="p" />
+            }
+          </li>
+        }
+      </ul>
+    </div>
+
+    @if (result(); as r) {
+      <app-paginator
+        [page]="r.page"
+        [pageSize]="r.pageSize"
+        [totalCount]="r.totalCount"
+        [totalPages]="r.totalPages"
+        [pageSizeOptions]="pageSizes"
+        itemLabel="profesores"
+        (pageChange)="onPage($event)"
+        (pageSizeChange)="onPageSize($event)"
+      />
+    }
+  }
+</section>
+
+@if (formTarget(); as target) {
+  <app-teacher-form [teacher]="target.teacher" (saved)="onSaved($event)" (cancelled)="formTarget.set(null)" />
+}
+
+@if (blocked(); as b) {
+  <app-teacher-delete-blocked
+    [name]="b.teacher.firstName + ' ' + b.teacher.lastName"
+    [subjects]="b.subjects"
+    [message]="b.message"
+    (closed)="blocked.set(null)"
+    (viewSubjects)="viewSubjects()"
+    (deactivate)="deactivate()"
+  />
+}

@@ -1,0 +1,36 @@
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: ${SQL_CONTAINER_NAME:-audisoft-sql}
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "Audisoft#2026"
+    ports:
+      - "${SQL_PORT:-1433}:1433"
+    volumes:
+      - audisoft-sql-data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -Q 'SELECT 1' -b -o /dev/null"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 15s
+
+  # Se ejecuta una vez en cada `docker compose up`: crea la base, aplica el esquema y, si la base
+  # está vacía, inserta los datos de ejemplo. Es idempotente: nunca duplica ni modifica datos existentes.
+  db-init:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    environment:
+      MSSQL_SA_PASSWORD: "Audisoft#2026"
+      DB_HOST: sqlserver
+    volumes:
+      - ./docker/sql:/sql:ro
+      - ./docker/init-db.sh:/init-db.sh:ro
+    entrypoint: ["/bin/bash", "/init-db.sh"]
+    restart: "no"
+
+volumes:
+  audisoft-sql-data:

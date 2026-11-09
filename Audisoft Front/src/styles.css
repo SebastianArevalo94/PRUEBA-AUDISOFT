@@ -1,0 +1,235 @@
+@import 'tailwindcss';
+
+/* Modo oscuro controlado por la clase .dark en <html> (ThemeService). */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ---------- Tokens del sistema de diseño (DESIGN.md generado con Google Stitch) ---------- */
+@theme {
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --color-surface: #faf8ff;
+  --color-background: #faf8ff;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f2f3ff;
+  --color-surface-container: #eaedff;
+  --color-surface-container-high: #e2e7ff;
+  --color-surface-container-highest: #dae2fd;
+  --color-on-surface: #131b2e;
+  --color-on-surface-variant: #434655;
+  --color-outline: #737686;
+  --color-outline-variant: #c3c6d7;
+
+  --color-primary: #004ac6;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #2563eb;
+  --color-primary-fixed: #dbe1ff;
+  --color-primary-fixed-dim: #b4c5ff;
+  --color-on-primary-fixed-variant: #003ea8;
+
+  --color-secondary: #006a61;
+  --color-secondary-fixed: #89f5e7;
+  --color-secondary-fixed-dim: #6bd8cb;
+  --color-on-secondary-fixed: #00201d;
+
+  --color-tertiary: #943700;
+  --color-tertiary-fixed: #ffdbcd;
+  --color-tertiary-fixed-dim: #ffb596;
+  --color-on-tertiary-fixed: #360f00;
+
+  --color-error: #ba1a1a;
+  --color-on-error: #ffffff;
+  --color-error-container: #ffdad6;
+  --color-on-error-container: #93000a;
+
+  /* Semánticos (badges de notas y alertas) */
+  --color-success: #16a34a;
+  --color-success-soft: #f0fdf4;
+  --color-success-border: #bbf7d0;
+  --color-warning: #d97706;
+  --color-warning-soft: #fffbeb;
+  --color-warning-border: #fde68a;
+  --color-danger: #dc2626;
+  --color-danger-soft: #fef2f2;
+  --color-danger-border: #fecaca;
+
+  --text-headline-xl: 36px;
+  --text-headline-xl--line-height: 44px;
+  --text-headline-xl--letter-spacing: -0.02em;
+  --text-headline-xl--font-weight: 700;
+  --text-headline-xl-mobile: 28px;
+  --text-headline-xl-mobile--line-height: 36px;
+  --text-headline-xl-mobile--letter-spacing: -0.01em;
+  --text-headline-xl-mobile--font-weight: 700;
+  --text-headline-lg: 30px;
+  --text-headline-lg--line-height: 38px;
+  --text-headline-lg--letter-spacing: -0.015em;
+  --text-headline-lg--font-weight: 600;
+  --text-headline-md: 20px;
+  --text-headline-md--line-height: 28px;
+  --text-headline-md--font-weight: 600;
+  --text-headline-sm: 16px;
+  --text-headline-sm--line-height: 24px;
+  --text-headline-sm--font-weight: 600;
+  --text-body-lg: 16px;
+  --text-body-lg--line-height: 26px;
+  --text-body-md: 14px;
+  --text-body-md--line-height: 22px;
+  --text-body-sm: 13px;
+  --text-body-sm--line-height: 18px;
+  --text-label-md: 14px;
+  --text-label-md--line-height: 20px;
+  --text-label-md--font-weight: 500;
+  --text-label-sm: 12px;
+  --text-label-sm--line-height: 16px;
+  --text-label-sm--letter-spacing: 0.02em;
+  --text-label-sm--font-weight: 600;
+  --text-caption: 11px;
+  --text-caption--line-height: 14px;
+  --text-caption--font-weight: 500;
+
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.05);
+  --shadow-overlay: 0 10px 15px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -4px rgba(15, 23, 42, 0.04);
+}
+
+/* ---------- Modo oscuro: mismos tokens, valores para fondo pizarra ---------- */
+.dark {
+  color-scheme: dark;
+  --color-surface: #0f172a;
+  --color-background: #0f172a;
+  --color-surface-container-lowest: #1e293b;
+  --color-surface-container-low: #1a2436;
+  --color-surface-container: #26324a;
+  --color-surface-container-high: #2f3b55;
+  --color-surface-container-highest: #3a4762;
+  --color-on-surface: #f1f5f9;
+  --color-on-surface-variant: #94a3b8;
+  --color-outline: #64748b;
+  --color-outline-variant: #334155;
+
+  --color-primary: #3b82f6;
+  --color-primary-container: #2563eb;
+  --color-primary-fixed: #1d2f57;
+  --color-primary-fixed-dim: #1e40af;
+  --color-on-primary-fixed-variant: #bfdbfe;
+
+  --color-secondary: #2dd4bf;
+  --color-secondary-fixed: #134e4a;
+  --color-secondary-fixed-dim: #115e59;
+  --color-on-secondary-fixed: #99f6e4;
+
+  --color-tertiary: #fb923c;
+  --color-tertiary-fixed: #4a2512;
+  --color-tertiary-fixed-dim: #7c2d12;
+  --color-on-tertiary-fixed: #fed7aa;
+
+  --color-error: #f87171;
+  --color-error-container: #450a0a;
+  --color-on-error-container: #fecaca;
+
+  --color-success: #4ade80;
+  --color-success-soft: #052e16;
+  --color-success-border: #14532d;
+  --color-warning: #fbbf24;
+  --color-warning-soft: #2d1d05;
+  --color-warning-border: #78350f;
+  --color-danger: #f87171;
+  --color-danger-soft: #2d0a0a;
+  --color-danger-border: #7f1d1d;
+
+  --shadow-card: 0 0 0 1px var(--color-outline-variant);
+}
+
+@layer base {
+  html,
+  body {
+    @apply bg-surface text-on-surface font-sans antialiased;
+    font-feature-settings: 'cv11', 'ss01';
+  }
+
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-primary-container;
+  }
+}
+
+/* Cifras tabulares para notas, fechas y contadores */
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Íconos Material Symbols Rounded */
+.icon {
+  font-family: 'Material Symbols Rounded';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 20px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  user-select: none;
+}
+.icon-filled {
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+/* ---------- Componentes reutilizables ---------- */
+@layer components {
+  .card {
+    @apply bg-surface-container-lowest rounded-xl shadow-card;
+  }
+
+  .btn {
+    @apply inline-flex h-10 items-center justify-center gap-2 rounded-lg px-4 text-label-md font-semibold transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100;
+  }
+  .btn-primary {
+    @apply bg-primary text-on-primary shadow-sm hover:bg-primary-container;
+  }
+  .btn-secondary {
+    @apply bg-surface-container text-on-surface shadow-sm hover:bg-surface-container-high;
+  }
+  .btn-danger {
+    @apply bg-danger text-white shadow-sm hover:brightness-90;
+  }
+  .btn-icon {
+    @apply inline-flex items-center justify-center rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container hover:text-primary;
+  }
+
+  .input {
+    @apply h-10 w-full rounded-lg border border-transparent bg-surface px-3 text-body-md text-on-surface outline-none transition-all placeholder:text-on-surface-variant focus:border-primary-container focus:ring-3 focus:ring-primary-container/15;
+  }
+  .input-invalid {
+    @apply border-danger focus:border-danger focus:ring-danger/15;
+  }
+  .field-label {
+    @apply mb-1.5 block text-label-md text-on-surface;
+  }
+  .field-error {
+    @apply mt-1.5 flex items-center gap-1 text-body-sm text-danger;
+  }
+
+  /* Uso: class="btn btn-primary" */
+  .badge {
+    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-label-sm whitespace-nowrap;
+  }
+  .grade-badge {
+    @apply tabular inline-flex min-w-12 items-center justify-center rounded-md border px-2 py-0.5 text-label-sm;
+  }
+  .grade-success {
+    @apply border-success-border bg-success-soft text-success;
+  }
+  .grade-warning {
+    @apply border-warning-border bg-warning-soft text-warning;
+  }
+  .grade-danger {
+    @apply border-danger-border bg-danger-soft text-danger;
+  }
+
+  .skeleton {
+    @apply animate-pulse rounded-md bg-surface-container;
+  }
+}

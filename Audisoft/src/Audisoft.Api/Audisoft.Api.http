@@ -1,0 +1,73 @@
+@baseUrl = http://localhost:5023/api
+
+### ---------- Teachers ----------
+POST {{baseUrl}}/teachers
+Content-Type: application/json
+
+{ "firstName": "Laura", "lastName": "Gómez", "email": "laura.gomez@universidad.edu.co" }
+
+### Paginado, con búsqueda (sin distinguir tildes) y filtro por estado
+GET {{baseUrl}}/teachers?search=gomez&isActive=true&page=1&pageSize=10
+
+###
+GET {{baseUrl}}/teachers/1/subjects
+
+### ---------- Subjects ----------
+POST {{baseUrl}}/subjects
+Content-Type: application/json
+
+{ "name": "Bases de Datos I", "code": "BD-101", "credits": 3, "teacherId": 1 }
+
+###
+GET {{baseUrl}}/subjects?teacherId=1&page=1&pageSize=10
+
+### ---------- Students ----------
+POST {{baseUrl}}/students
+Content-Type: application/json
+
+{ "firstName": "Carlos", "lastName": "Pérez", "email": "carlos.perez@universidad.edu.co", "studentCode": "EST-2026-0001" }
+
+###
+GET {{baseUrl}}/students?search=perez&page=1&pageSize=10
+
+###
+GET {{baseUrl}}/students/1/average
+
+### ---------- Grades ----------
+POST {{baseUrl}}/grades
+Content-Type: application/json
+
+{ "name": "Parcial 1", "value": 4.2, "percentage": 30, "studentId": 1, "teacherId": 1, "subjectId": 1 }
+
+###
+POST {{baseUrl}}/grades
+Content-Type: application/json
+
+{ "name": "Taller 1", "value": 3.5, "percentage": 20, "studentId": 1, "teacherId": 1, "subjectId": 1 }
+
+### Filtros combinables: studentId, teacherId, subjectId (+ page, pageSize)
+GET {{baseUrl}}/grades?studentId=1&subjectId=1&page=1&pageSize=10
+
+### Regla de negocio: valor fuera de rango -> 400
+POST {{baseUrl}}/grades
+Content-Type: application/json
+
+{ "name": "Inválida", "value": 5.5, "percentage": 10, "studentId": 1, "teacherId": 1, "subjectId": 1 }
+
+### Estudiantes matriculados en 2025, más recientes primero
+GET {{baseUrl}}/students?enrolledFrom=2025-01-01&enrolledTo=2025-12-31&sortBy=enrollmentDate&sortDir=desc
+
+### ---------- Resúmenes y health check ----------
+GET {{baseUrl}}/students/summary
+
+###
+GET {{baseUrl}}/teachers/summary
+
+###
+GET {{baseUrl}}/subjects/summary
+
+### Mismos filtros que el listado de notas
+GET {{baseUrl}}/grades/summary?subjectId=1
+
+###
+GET http://localhost:5023/health
